@@ -1,70 +1,58 @@
 package GuessTheWord;
 
-import java.util.Random;
 import java.util.Scanner;
 
 public class Game {
-    //список слів які можна загадати
-    private static final String[] WORDS = {
-            "кіт", "телефон", "шоколад", "експедиція", "полуниця", "ландшафт", "архітектура", "колір"
-    };
-
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        Random random = new Random();
+        WordProvider wordProvider = new WordProvider();
 
-        //Комп'ютер обирає слово
-        String secretWord = WORDS[random.nextInt(WORDS.length)];
-        char[] guessedWord = new char[secretWord.length()];
+        System.out.println("Вітаємо у грі 'Вгадай слово'!");
+        System.out.println("Оберіть складність: 1 - Легко (3-4 букви), 2 - Середньо (5-6 букв), 3 - Важко (8+ букв)");
 
-        //Приховую його
-        for (int i = 0; i < guessedWord.length; i++) {
-            guessedWord[i] = '_';
+        String level;
+        while (true) {
+            System.out.print("Ваш вибір (1, 2 або 3): ");
+            level = scanner.next();
+            if (wordProvider.isValidLevel(level)) {
+                break;
+            }
+            System.out.println("Невірний вибір. Спробуйте ще раз.");
         }
 
-        System.out.println("Гра: Вгадай слово");
-        System.out.println("Комп'ютер загадав слово із " + secretWord.length() + " букв.");
-        System.out.println("Спробуйте вгадати по буквам");
+        String randomWord = wordProvider.getWordByDifficulty(level);
+        SecretWord session = new SecretWord(randomWord);
 
-        boolean wordIsGuessed = false;
+        System.out.println("\nГра почалась! Для підказки введіть 'hint' або '?'");
 
-        //Основний цикл гри
-        while (!wordIsGuessed) {
-            System.out.println("\nСлово: " + String.valueOf(guessedWord));
+        while (!session.isSolved()) {
+            System.out.println("\nСлово: " + session.getDisplayString());
             System.out.print("Введіть букву: ");
 
             String input = scanner.next().toLowerCase();
 
-            //Перевірка ввода (буква чи ні)
+            if (input.equals("hint") || input.equals("?")) {
+                if (session.openHint()) {
+                    System.out.println("Підказка використана! Буква відкрита.");
+                }
+                continue;
+            }
+
             if (input.length() != 1 || !Character.isLetter(input.charAt(0))) {
-                System.out.println("Введіть одну букву");
+                System.out.println("Помилка! Введіть одну букву.");
                 continue;
             }
 
             char letter = input.charAt(0);
-            boolean isCorrect = false;
 
-            //Чи є буква в слові
-            for (int i = 0; i < secretWord.length(); i++) {
-                if (secretWord.charAt(i) == letter) {
-                    guessedWord[i] = letter; //відкривається буква
-                    isCorrect = true;
-                }
-            }
-
-            if (isCorrect) {
-                System.out.println(">> Правильно!");
+            if (session.guess(letter)) {
+                System.out.println("Правильно!");
             } else {
-                System.out.println(">> Не правильно...");
-            }
-
-            //Перевірка перемоги
-            if (String.valueOf(guessedWord).equals(secretWord)) {
-                wordIsGuessed = true;
-                System.out.println("\n-----------------------------");
-                System.out.println("Ви вгадали слово:)" + secretWord);
-                System.out.println("-----------------------------");
+                System.out.println("Немає такої букви...");
             }
         }
+        System.out.println("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        System.out.println("ПЕРЕМОГА! Ви вгадали слово: " + session.getOriginalWord());
+        System.out.println("Використано підказок: " + session.getHintsUsed());
     }
 }
